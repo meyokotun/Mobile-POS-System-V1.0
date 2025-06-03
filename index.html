@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mobile POS System</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #2196f3;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .product-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .product {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: transform 0.2s;
+    }
+
+    .product:hover {
+      transform: scale(1.05);
+    }
+
+    .cart {
+      padding: 1rem;
+      background: #e0f7fa;
+      margin-top: 10px;
+    }
+
+    .summary {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    button {
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>POS</h1>
+    </header>
+
+    <main>
+      <section class="product-list" id="product-list"></section>
+
+      <section class="cart">
+        <h2>Cart</h2>
+        <ul id="cart-items"></ul>
+        <div class="summary">
+          <p>Total: <span id="total">0</span> MMK</p>
+          <button onclick="checkout()">Checkout</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzQvm16X2mPmEuWGmmJsMfr2apQO16gKG3R4nPUPDkNgYHabWvBrJihjkzFs1cYkfIr2A/exec';
+
+    const products = [
+      { id: 1, name: "Coca-Cola", price: 1500 },
+      { id: 2, name: "Pepsi", price: 1300 },
+      { id: 3, name: "Sprite", price: 1400 },
+      { id: 4, name: "Water", price: 500 }
+    ];
+
+    let cart = [];
+
+    function renderProducts() {
+      const container = document.getElementById("product-list");
+      container.innerHTML = "";
+      products.forEach(product => {
+        const el = document.createElement("div");
+        el.className = "product";
+        el.textContent = `${product.name} - ${product.price} MMK`;
+        el.onclick = () => addToCart(product);
+        container.appendChild(el);
+      });
+    }
+
+    function addToCart(product) {
+      const found = cart.find(p => p.id === product.id);
+      if (found) {
+        found.qty += 1;
+      } else {
+        cart.push({ ...product, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById("cart-items");
+      const totalEl = document.getElementById("total");
+      list.innerHTML = "";
+      let total = 0;
+
+      cart.forEach(item => {
+        total += item.qty * item.price;
+        const li = document.createElement("li");
+        li.textContent = `${item.name} x ${item.qty}`;
+        list.appendChild(li);
+      });
+
+      totalEl.textContent = total;
+    }
+
+    function checkout() {
+      if (cart.length === 0) {
+        alert("Cart is empty!");
+        return;
+      }
+
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cart })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === "success") {
+          alert("✅ Order saved to Google Sheets!");
+          cart = [];
+          renderCart();
+        } else {
+          alert("❌ Error: " + data.message);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("❌ Connection failed! Please check the URL or deployment access.");
+      });
+    }
+
+    renderProducts();
+  </script>
+</body>
+</html>
